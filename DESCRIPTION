@@ -1,0 +1,12 @@
+Package: dep
+Title: R
+Version: 0.0.0.9000
+Authors@R: 
+    person(given = "Cole",
+           family = "Brokamp",
+           role = c("aut", "cre"),
+           email = "cole.brokamp@gmail.com")
+Description: What the package does (one paragraph).
+License: GPL-3
+Encoding: UTF-8
+LazyData: true

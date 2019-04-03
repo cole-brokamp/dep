@@ -1,0 +1,7 @@
+```{r}
+require(pkg7)
+require("pkg8")
+require('pkg9', quietly = TRUE)
+pkg10::some_function
+pkg11:::some_unexported_function
+```

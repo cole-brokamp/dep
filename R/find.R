@@ -8,11 +8,11 @@
 #' @return a vector of package names
 #' @export
 get_proj_deps <- function(root = '.') {
-    fls <- list.files(path = directory,
+    fls <- list.files(path = root,
                       pattern='^.*\\.R$|^.*\\.Rmd$',
                       full.names=TRUE,
                       recursive=TRUE)
-    pkg_names <- purrr::map_chr(fls, get_deps)
+    pkg_names <- purrr::map(fls, get_deps) %>% unlist()
     pkg_names <- unique(pkg_names)
     if (length(pkg_names) == 0) {
         warning('no packages found in project')
@@ -64,10 +64,11 @@ get_deps <- function(fl){
 finder <- function(rgx, lns) regmatches(lns, gregexpr(rgx, lns, perl = TRUE)) %>% unlist()
 
 get_lines <- function(file_name) {
-    if (grepl('.Rmd', file_name, fixed=TRUE)) {
-        tmp.file <- tempfile()
-        knitr::purl(input=file_name, output=tmp.file, quiet=TRUE)
-        file_name <- tmp.file
+    if (tools::file_ext(file_name) == 'Rmd') {
+      rmd_lns <- readLines(file_name)
+      tmp.file <- tempfile()
+      cat(rmd_chunks(rmd_lns), file = tmp.file)
+      file_name <- tmp.file
     }
     lns <- tryCatch(formatR::tidy_source(file_name,
                                          comment = FALSE,
@@ -83,4 +84,19 @@ get_lines <- function(file_name) {
                     })
     if (is.null(lns)) stop('No parsed text available', call. = FALSE)
     return(lns)
+}
+
+rmd_chunks <- function(lines) {
+  ## From https://github.com/rstudio/rstudio/blob/0edb05f67b4f2eea25b8cfb15f7c64ec9b27b288/src/gwt/acesupport/acemode/rmarkdown_highlight_rules.js#L181-L184
+  chunk_start_re <- "^(?:[ ]{4})?`{3,}\\s*\\{[Rr]\\b(?:.*)engine\\s*\\=\\s*['\"][rR]['\"](?:.*)\\}\\s*$|^(?:[ ]{4})?`{3,}\\s*\\{[rR]\\b(?:.*)\\}\\s*$";
+  chunk_end_re <- "^(?:[ ]{4})?`{3,}\\s*$"
+  chunk_start <- grepl(chunk_start_re, lines, perl = TRUE)
+  chunk_end <- grepl(chunk_end_re, lines, perl = TRUE)
+  chunk_num <- cumsum(chunk_start)
+  in_chunk <- (chunk_num - cumsum(chunk_end)) != 0
+  chunks <- split(lines[in_chunk], chunk_num[in_chunk])
+  names(chunks) <- NULL
+  chunks <- lapply(chunks, function(x) x[-1])
+  chunks <- lapply(chunks, paste, collapse = "\n")
+  sapply(chunks, function(x) paste0(x, "\n"))
 }

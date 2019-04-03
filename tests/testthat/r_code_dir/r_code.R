@@ -1,0 +1,5 @@
+library(pkg1)
+library("pkg2")
+library('pkg3')
+library(pkg4); library(pkg5)
+library(pkg6, quietly = TRUE)

@@ -1,37 +1,44 @@
-ends <- function(root = ".", force = FALSE, ...){
-    descfile <- file.path(root, "DESCRIPTION")
-    if (! file.exists(descfile)) {
-        init_desc(root = root, ..., force = force)
-    }
-    ## should there be a message for what deps were found and where they will be added to? (use the rcli package already needed for pak)
-    purrr::walk(get_proj_deps(), add_deps_to_desc)
+ends <- function(project_root = getwd(), ...){
+    desc_file <- file.path(project_root, "DESCRIPTION")
+    init_desc(project_root = project_root, ...)
+    message("using desc file at ", desc_file)
+    purrr::walk(get_proj_deps(root = project_root),
+                add_dep_to_desc,
+                project_root = project_root)
 }
 
 #' creates a minimal DESCRIPTION file with defaults taken from the current environment
-init_desc <- function(root = ".",
-                      force = FALSE,
+#' supports the author `desc` add_me stuff...
+init_desc <- function(project_root = getwd(),
                       title = basename(getwd()),
                       date = substr(Sys.time(), 1, 10),
                       r_version = with(R.version, paste(major, minor, sep = '.')),
                       ...) {
-  if (file.exists(file.path(root, "DESCRIPTION"))) {
-    stop("DESCRIPTION file already exists; will not overwrite unless force = TRUE", call. = FALSE)
+  desc_path <- file.path(project_root, "DESCRIPTION")
+  if (file.exists(desc_path)) {
+    warning("\nDESCRIPTION file already exists; overwriting it\n")
+    ## stop("DESCRIPTION file already exists")
     }
     dsc <- desc::desc(text = "")
     dsc$set(Title = title, Date = date, R.version = r_version, ...)
     tryCatch(dsc$add_me(role = c("cre", "aut")),
              error = function(e) invisible(NULL))
-    descfile <- file.path(root, "DESCRIPTION")
-    dsc$write(descfile)
+    dsc$write(desc_path)
 }
 
+get_gh_remote <- function(pkg_name){
+  dsc <- desc::desc(package = pkg_name)
+  github_info <- dsc$get(c("GithubUsername", "GithubRepo"))
+  if (any(is.na(github_info))) stop()
+  paste(github_info, collapse = "/")
+  }
 
 ## takes version number and remote info from library
 ## but won't this be a problem if trying to force a re- dep::ends() ??
 ## should FORCE = TRUE, unset .libPaths()?, we always want to check on package version info from the current library
 ## BUT, this could be okay because making a desc file after a deploy would be equivalent to relying on a private library (the error that a package must be installed before you can take a dependency on it would be good, because it would force you to install to the private library first).
-add_dep_to_desc <- function(pkg_name, root = '.') {
-    desc_path <- file.path(root, "DESCRIPTION")
+add_dep_to_desc <- function(pkg_name, project_root = getwd()) {
+    desc_path <- file.path(project_root, "DESCRIPTION")
     if (! file.exists(desc_path)) {
         stop("need a DESCRIPTION file to deploy, create one first with dep:::init_desc()", call. = FALSE)
     }
@@ -42,21 +49,28 @@ add_dep_to_desc <- function(pkg_name, root = '.') {
     is.cran <- !is.null(pkg_d$Repository) && pkg_d$Repository == "CRAN"
     is.github <- !is.null(pkg_d$GithubRepo)
     is.base <- !is.null(pkg_d$Priority) && pkg_d$Priority == "base"
-    if (!is.cran & !is.github & !is.base)
-        stop("CRAN or GitHub info for ", pkg_name, " not found. Other repositories are currently not supported.",
-             call. = FALSE)
-    ver <- as.character(utils::packageVersion(pkg_name))
-    ## will is.base cause problems if I need to specify stats::filter in my code? (for masking reasons)
-    if (is.base) stop('Do not specify base packages in your code; specify R version instead', call. = FALSE)
-        desc::desc_set_dep(pkg_name,
-                           type = "Imports",
-                           version = ver,
-                           file = root)
+
+    if (!is.cran & !is.github & !is.base){
+      stop("CRAN or GitHub info for ", pkg_name, " not found. Other repositories are currently not supported.",
+           call. = FALSE)
+    }
+
+    if (is.base) {
+      message("ignoring ", pkg_name, " because it will be specified using the version of R")
+    }
+
+    ver <- paste("==", packageVersion(pkg_name))
+    if (is.cran) remote <- "CRAN"
+    if (is.github) remote <- get_gh_remote(pkg_name)
+    message("    ", "adding ", pkg_name, " (", ver, ") from ", remote)
+    desc::desc_set_dep(pkg_name,
+                       type = "Imports",
+                       version = ver,
+                       file = desc_path)
+    if (! remote == "CRAN"){
+      existing_remotes <- desc::desc_get_remotes(desc_path)
+      remotes <- unique(c(existing_remotes, remote))
+      desc::desc_set_remotes(remotes, file = desc_path)
+    }
     return(invisible())
 }
-
-## add_package_to_desc('sf')
-## add_package_to_desc('tidyverse')
-## add_package_to_desc('CB')
-## add_package_to_desc('packageNotHere')
-

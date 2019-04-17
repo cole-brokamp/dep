@@ -2,12 +2,14 @@
 % Please edit documentation in R/document.R
 \name{init_desc}
 \alias{init_desc}
-\title{creates a minimal DESCRIPTION file with defaults taken from the current environment}
+\title{creates a minimal DESCRIPTION file with defaults taken from the current environment
+supports the author `desc` add_me stuff...}
 \usage{
-init_desc(root = ".", force = FALSE, title = basename(getwd()),
+init_desc(project_root = getwd(), title = basename(getwd()),
   date = substr(Sys.time(), 1, 10), r_version = with(R.version,
   paste(major, minor, sep = ".")), ...)
 }
 \description{
 creates a minimal DESCRIPTION file with defaults taken from the current environment
+supports the author `desc` add_me stuff...
 }

@@ -12,7 +12,7 @@ get_proj_deps <- function(root = '.') {
                       pattern='^.*\\.R$|^.*\\.Rmd$',
                       full.names=TRUE,
                       recursive=TRUE)
-    pkg_names <- purrr::map(fls, get_deps) %>% unlist()
+    pkg_names <- unlist(purrr::map(fls, get_deps))
     pkg_names <- unique(pkg_names)
     if (length(pkg_names) == 0) {
         warning('no packages found in project')
@@ -56,12 +56,13 @@ get_deps <- function(fl){
                  require = '(?<=(require\\()|(require\\(["\']{1}))[[:alnum:]|.]+',
                  colon = "[[:alnum:]|.]*(?=:{2,3})")
 
-    found_pkgs <- purrr::map(rgxs, finder, lns = lns) %>% unlist() %>% unique()
+    found_pkgs <- purrr::map(rgxs, finder, lns = lns)
+    found_pkgs <- unique(unlist(found_pkgs))
     found_pkgs <- found_pkgs[! found_pkgs %in% c('', ' ')]
     return(found_pkgs)
 }
 
-finder <- function(rgx, lns) regmatches(lns, gregexpr(rgx, lns, perl = TRUE)) %>% unlist()
+finder <- function(rgx, lns) unlist(regmatches(lns, gregexpr(rgx, lns, perl = TRUE)))
 
 get_lines <- function(file_name) {
     if (tools::file_ext(file_name) == 'Rmd') {

@@ -1,3 +1,11 @@
+#' dep::loy()
+#'
+#' @details Reads package requirements (including package versions) from a DESCRIPTION file and installs to a project-specific library using the "pak" package
+#'
+#' @param project_root project root folder
+#'
+#' @return NULL
+#' @export
 loy <- function(project_root = getwd()) {
 
   desc_path <- file.path(project_root, "DESCRIPTION")

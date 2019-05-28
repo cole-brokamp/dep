@@ -1,3 +1,11 @@
+#' dep::ends()
+#'
+#' @details Finds and documents (in a DESCRIPTION file) all R packages required to run all R code in a project.  The version of each package is taken from versions installed in the user's library (.libPaths()) and the current used version of R is also recorded.
+#'
+#' @param project_root project root folder
+#'
+#' @return NULL; but side effect is the creation of a DESCRIPTION file within the project root folder
+#' @export
 ends <- function(project_root = getwd(), ...){
     desc_file <- file.path(project_root, "DESCRIPTION")
     init_desc(project_root = project_root, ...)

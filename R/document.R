@@ -8,29 +8,25 @@
 #' @export
 ends <- function(project_root = getwd(), ...){
     desc_file <- file.path(project_root, "DESCRIPTION")
+    if (file.exists(desc_file)) {
+      warning("\nDESCRIPTION file already exists; overwriting it\n")
+      ## stop("DESCRIPTION file already exists")
+    }
     init_desc(project_root = project_root, ...)
-    message("using desc file at ", desc_file)
-    purrr::walk(get_proj_deps(root = project_root),
-                add_dep_to_desc,
+    get_proj_deps(root = project_root) %>%
+    purrr::walk(add_dep_to_desc,
                 project_root = project_root)
 }
 
 #' creates a minimal DESCRIPTION file with defaults taken from the current environment
-#' supports the author `desc` add_me stuff...
 init_desc <- function(project_root = getwd(),
                       title = basename(getwd()),
                       date = substr(Sys.time(), 1, 10),
-                      r_version = with(R.version, paste(major, minor, sep = '.')),
+                      r_version = getRversion(),
                       ...) {
   desc_path <- file.path(project_root, "DESCRIPTION")
-  if (file.exists(desc_path)) {
-    warning("\nDESCRIPTION file already exists; overwriting it\n")
-    ## stop("DESCRIPTION file already exists")
-    }
     dsc <- desc::desc(text = "")
     dsc$set(Title = title, Date = date, R.version = r_version, ...)
-    tryCatch(dsc$add_me(role = c("cre", "aut")),
-             error = function(e) invisible(NULL))
     dsc$write(desc_path)
 }
 
@@ -41,10 +37,6 @@ get_gh_remote <- function(pkg_name){
   paste(github_info, collapse = "/")
   }
 
-## takes version number and remote info from library
-## but won't this be a problem if trying to force a re- dep::ends() ??
-## should FORCE = TRUE, unset .libPaths()?, we always want to check on package version info from the current library
-## BUT, this could be okay because making a desc file after a deploy would be equivalent to relying on a private library (the error that a package must be installed before you can take a dependency on it would be good, because it would force you to install to the private library first).
 add_dep_to_desc <- function(pkg_name, project_root = getwd()) {
     desc_path <- file.path(project_root, "DESCRIPTION")
     if (! file.exists(desc_path)) {

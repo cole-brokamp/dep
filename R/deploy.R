@@ -1,6 +1,6 @@
 #' dep::loy()
 #'
-#' @details Reads package requirements (including package versions) from a DESCRIPTION file and installs to a project-specific library using the "pak" package
+#' @details Reads package requirements (including package versions) from a DESCRIPTION file and installs to a project-specific library, `./r-packages/`
 #'
 #' @param project_root project root folder
 #'
@@ -15,21 +15,49 @@ loy <- function(project_root = getwd()) {
   }
 
   ## init Rprofile, init private library, set lib paths
-  ## pak:::proj_create(project_root)
   message("deploying project to\n  ", project_root)
   dir.create(file.path(project_root, "r-packages"),
              recursive = TRUE, showWarnings = FALSE)
-  writeLines(pak:::proj_rprofile(),
+  writeLines(deploy_rprofile(),
              con = file.path(project_root, ".Rprofile"))
-  ## pak::pak_setup(mode = "auto", quiet = FALSE)
-  ## .libPaths()
-  .libPaths(unique(c(file.path(project_root, "r-packages"), .libPaths())))
-  ## pak::pak_sitrep()
-  pak::local_install_deps(project_root,
+  source(file.path(project_root, ".Rprofile"))
+
+  ## the below will not install specific versions of packages
+  ## it will also not install a package to the project library if it is already installed in the global library
+  ## see install_package_versions() below for an alternative approach
+
+  pak::local_install_deps(root = project_root,
                           upgrade = FALSE,
+                          lib = .libPaths()[1],
                           ask = interactive())
-  ## add option to check if all required libraries are avail?
-  ## and then error if they are not?
+
+}
+
+deploy_rprofile <- function(){
+  c("# this file was created by `dep::loy()`; please do not edit by hand",
+    ".libPaths(unique(c('r-packages', .libPaths())))",
+    "if (file.exists('~/.Rprofile')) source('~/.Rprofile')",
+    "message('using ./r-packages/ as first package search path')")
+}
+
+install_package_versions <- function(deps){
+
+  pkgs <- desc::desc_get_deps('DESCRIPTION')
+  pkgs$version <-
+    stringr::str_extract(pkgs$version,
+                         "([[:digit:]]+[.-]){1,}[[:digit:]]+")
+    ## regex taken from `.standard_regexps()$valid_package_version`
+
+  rmts <- desc::desc_get_remotes('DESCRIPTION')
+
+  ## now match remotes to matching packages and make a new column
+
+  ## then, feed this into the appropriate install functions below
+
+  ## all of these takes vector names of packages
+  ## what happens when one of them fails?
+  remotes::install_version(package, version, upgrade = 'never', quiet = FALSE) # for cran
+  remotes::install_github(repo, upgrade = 'never', quiet = FALSE) # username/repo[/subdir][@ref|#pull]
 }
 
 nuke <- function(project_root = getwd()){

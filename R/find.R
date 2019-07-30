@@ -49,7 +49,6 @@ get_proj_deps <- function(root = '.') {
 #' get_deps('temp.R')
 #' unlink('temp.R')
 #' }
-
 get_deps <- function(fl){
     lns <- get_lines(fl)
     rgxs <- list(library = '(?<=(library\\()|(library\\(["\']{1}))[[:alnum:]|.]+',

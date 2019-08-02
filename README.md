@@ -50,7 +50,8 @@ remotes::install_github('cole-brokamp/dep')
 
 - use a global library on your local machine and then use a private library only when deploying
 - uses `DESCRIPTION` files; these are already implemented for R packages, but here we use a lightweight version for R *projects* (already in wide use within R ecosystem, but uses `debian control file` standards)
-- supports CRAN and GitHub packages only
+- supports CRAN *and* GitHub packages
+- use version numbers and/or GH sha1 strings to specify versions (you *don't* need all packages that you rely on to be available on CRAN *on the same date*)
 - all package dependencies should be evident within the code
 - `DESCRIPTION` file is calculated from code and not manually edited
 - each time you run `dep::ends()`, the `DESCRIPTION` file will be overwritten completely

@@ -23,9 +23,10 @@ dep::ends()
 ```
 
 to search R code within the project to automatically find all R packages that are used, including their repositories and versions, and to store this information in a standard `DESCRIPTION` file. Additionally, the following information is automatically stored in the `DESCRIPTION` file:
-    - title as the basename of the working directory
-    - current date
-    - current version of `R`
+
+- title as the basename of the working directory
+- current date
+- current version of `R`
 
 After transferring the R project, from within the project root folder, run:
 

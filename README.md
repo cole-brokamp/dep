@@ -4,7 +4,7 @@
 
 [![lifecycle](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://www.tidyverse.org/lifecycle/#experimental) [![CRAN status](https://www.r-pkg.org/badges/version/dep)](https://cran.r-project.org/package=dep)
 
-`dep` aims to simplify the process of transferring an R project from one computing environment to another by automatically documenting the project's package dependencies in a standard `DESCRIPTION` file and then installing them to a project-specific private library. Some examples of "transferring" an R project include:
+`dep` aims to simplify the process of transferring an R project from one computing environment to another by automatically documenting the project's package dependencies in a standard `DESCRIPTION` file and then installing them to a project-specific private library. Some examples of transferring an R project include:
 
 - moving a local R project to a high performance computer
 - sending a project to a collaborator
@@ -22,12 +22,12 @@ From within the project root folder, run:
 dep::ends()
 ```
 
-to search R code within the project to automatically find all R packages that are used, including their repositories and versions, and to store this information in a standard `DESCRIPTION` file. Additionally, the following information is automatically stored in the `DESCRIPTION` file: 
+to search R code within the project to automatically find all R packages that are used, including their repositories and versions, and to store this information in a standard `DESCRIPTION` file. Additionally, the following information is automatically stored in the `DESCRIPTION` file:
     - title as the basename of the working directory
     - current date
     - current version of `R`
 
-After "transferring" the R project, from within the project root folder, run:
+After transferring the R project, from within the project root folder, run:
 
 ```r
 dep::loy()
@@ -46,25 +46,16 @@ remotes::install_github('cole-brokamp/dep')
 # source("https://install-github.me/cole-brokamp/dep")
 ```
 
-## An Opinionated Workflow
+`dep` is currently undergoing development and the API is subject to change. If you are using `dep` for critical projects, you may want to specify a specific version with, e.g. `source("https://install-github.me/cole-brokamp/dep@0.1.1")`.
 
-- use a global library on your local machine and then use a private library only when deploying
-- uses `DESCRIPTION` files; these are already implemented for R packages, but here we use a lightweight version for R *projects* (already in wide use within R ecosystem, but uses `debian control file` standards)
-- supports CRAN *and* GitHub packages
-- use version numbers and/or GH sha1 strings to specify versions (you *don't* need all packages that you rely on to be available on CRAN *on the same date*)
+## An Opinionated Workflow / How This Differs from Similar Packages
+
 - all package dependencies should be evident within the code
+- use version numbers and/or GH sha1 strings to specify versions (you *don't* need all packages that you rely on to be available on CRAN *on the same date*)
+- uses `DESCRIPTION` files; these are already implemented for R packages, but here we use a lightweight version for R *projects* (already in wide use within R ecosystem, but uses `debian control file` standards)
 - `DESCRIPTION` file is calculated from code and not manually edited
-- each time you run `dep::ends()`, the `DESCRIPTION` file will be overwritten completely
-- all package versions and R version are taken from the current session (package must be installed to take a dependency on it)
+- supports CRAN *and* GitHub packages
+- each time you run `dep::ends()`, the `DESCRIPTION` file will be overwritten completely (well, at least when `overwrite = TRUE` is supplied)
 - keep your DESCRIPTION file under version control! this will allow for quick reverting of the file and easier sharing of projects with colleagues
-
-## TODO
-
-- add system dependencies to DESC file when creating DESC file
-- what to do about sysreqs when deploying?
-- make backend for package installation selectable ('pak', 'remotes')
-- ensure that dep doesn't try to install packages that are already installed or available in starting images
-- make option to use different filename besides `DESCRIPTION`
-- add option to deploy to check if all libraries are installed and error if not
-- how can tags/releases in git be synced with versions in DESC file?
-- should dep::ends refuse if DESC file already exists?  or just write over this (maybe make a backup??)
+- all package versions and R version are taken from the current session (package must be installed to take a dependency on it)
+- use a global library on your local machine and then use a private library only when deploying

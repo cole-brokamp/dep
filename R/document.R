@@ -23,7 +23,7 @@ ends <- function(project_root = getwd(), overwrite = FALSE, ...){
 init_desc <- function(project_root = getwd(),
                       title = basename(getwd()),
                       date = substr(Sys.time(), 1, 10),
-                      r_version = getRversion(),
+                      r_version = paste(getRversion(), sep = '.'),
                       ...) {
   desc_path <- file.path(project_root, "DESCRIPTION")
     dsc <- desc::desc(text = "")
@@ -51,6 +51,8 @@ add_dep_to_desc <- function(pkg_name, project_root = getwd()) {
     is.github <- !is.null(pkg_d$GithubRepo)
     is.base <- !is.null(pkg_d$Priority) && pkg_d$Priority == "base"
 
+    utils::packageDescription('sf')$Version
+
     if (!is.cran & !is.github & !is.base){
       stop("CRAN or GitHub info for ", pkg_name, " not found. Other repositories are currently not supported.",
            call. = FALSE)
@@ -58,9 +60,10 @@ add_dep_to_desc <- function(pkg_name, project_root = getwd()) {
 
     if (is.base) {
       message("ignoring ", pkg_name, " because it will be specified using the version of R")
+      return(invisible())
     }
 
-    ver <- paste("==", packageVersion(pkg_name))
+    ver <- paste("==", utils::packageDescription(pkg_name)$Version)
     if (is.cran) remote <- "CRAN"
     if (is.github) remote <- get_gh_remote(pkg_name)
     message("    ", "adding ", pkg_name, " (", ver, ") from ", remote)

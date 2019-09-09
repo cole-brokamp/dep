@@ -14,7 +14,7 @@ test_that("parses packages from RMarkdown file",{
   )
 })
 
-test_that("parses package from directory",{
+test_that("parses packages from directory",{
   expect_equal(
     get_proj_deps(test_path("r_code_dir")),
     paste0('pkg', 1:11)

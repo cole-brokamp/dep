@@ -3,14 +3,15 @@
 #' @details Finds and documents (in a DESCRIPTION file) all R packages required to run all R code in a project.  The version of each package is taken from versions installed in the user's library (.libPaths()) and the current used version of R is also recorded.
 #'
 #' @param project_root project root folder
+#' @param overwrite overwrite an existing DESCRIPTION file?
 #'
 #' @return NULL; but side effect is the creation of a DESCRIPTION file within the project root folder
 #' @export
-ends <- function(project_root = getwd(), ...){
+ends <- function(project_root = getwd(), overwrite = FALSE, ...){
     desc_file <- file.path(project_root, "DESCRIPTION")
     if (file.exists(desc_file)) {
-      warning("\nDESCRIPTION file already exists; overwriting it\n")
-      ## stop("DESCRIPTION file already exists")
+      ## warning("\nDESCRIPTION file already exists; overwriting it\n")
+      stop("DESCRIPTION file already exists, rerun with `overwrite = TRUE` to force file creation")
     }
     init_desc(project_root = project_root, ...)
     get_proj_deps(root = project_root) %>%

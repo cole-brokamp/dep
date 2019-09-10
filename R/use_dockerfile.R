@@ -6,8 +6,6 @@
 #' @param pkgs a character vector of package names
 #'
 #' @export
-#' @importFrom magrittr %>%
-#' @importFrom httr GET content
 
 get_sysreqs <- function(pkgs){
   platform <- "linux-x86_64-debian-gcc"

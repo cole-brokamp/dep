@@ -9,15 +9,14 @@
 loy <- function(project_root = getwd()) {
 
   project_root <- normalizePath(project_root, mustWork = TRUE)
-
   desc_path <- file.path(project_root, "DESCRIPTION")
 
   if (! file.exists(desc_path)) {
-    stop("cannot find a DESCRIPTION file to deploy", call. = FALSE)
+    stop("no DESCRIPTION file in ", project_root , " to deploy", call. = FALSE)
   }
 
   ## init Rprofile, init private library, set lib paths
-  message("deploying project to\n  ", project_root)
+  message("deploying project to:\n", project_root)
   dir.create(file.path(project_root, 'r-packages'), recursive = TRUE, showWarnings = FALSE)
 
   writeLines(deploy_rprofile(),
@@ -25,18 +24,19 @@ loy <- function(project_root = getwd()) {
 
   .libPaths(normalizePath(file.path(project_root, 'r-packages'), mustWork = TRUE))
   ## dep:::set_lib_paths(file.path(project_root, "r-packages"))
+  message(paste(c('libpaths set to:', .libPaths()), collapse = '\n'))
 
-  ## the below will not install specific versions of packages
+  ## pak will not install specific versions of packages??
   ## it will also not install a package to the project library if it is already installed in the global library
-  ## see install_package_versions() below for an alternative approach
+  ## pak::local_install_deps(root = project_root,
+  ##                         upgrade = FALSE,
+  ##                         ask = interactive())
 
-  pak::local_install_deps(root = project_root,
-                          upgrade = FALSE,
-                          lib = .libPaths()[1],
-                          ask = interactive())
+  install_package_versions_from_desc(project_root = project_root)
 
 }
 
+#' explicitly set lib path rather than adding to it
 set_lib_paths <- function(lib_vec) {
   lib_vec <- normalizePath(lib_vec, mustWork = TRUE)
   shim_fun <- .libPaths
@@ -53,7 +53,7 @@ deploy_rprofile <- function(){
     "## dep:::set_lib_paths('r-packages')",
     ".libPaths(normalizePath('r-packages', mustWork = TRUE))",
     "if (file.exists('~/.Rprofile')) source('~/.Rprofile')",
-    "message(paste('libpaths set to: ', .libPaths(), sep = '\n'))")
+    "message(paste(c('libpaths set to:', .libPaths()), collapse = '\\n'))")
 }
 
 install_package_versions_from_desc <- function(project_root){
@@ -67,37 +67,40 @@ install_package_versions_from_desc <- function(project_root){
     ## regex taken from `.standard_regexps()$valid_package_version`
 
   rmts <- desc::desc_get_remotes(desc_path)
-  rmts_pieces <- strsplit(rmts, "/", fixed = TRUE)
+  rmts_pieces <- strsplit(rmts, "[/@]")
   rmts_tbl <- tibble(gh_user = map_chr(rmts_pieces, 1),
-                     package = map_chr(rmts_pieces, 2))
+                     package = map_chr(rmts_pieces, 2),
+                     sha1 = map_chr(rmts_pieces, 3))
 
   pkgs <- left_join(pkgs, rmts_tbl, by = 'package')
 
   cran_pkgs <- filter(pkgs, is.na(gh_user))
   gh_pkgs <- filter(pkgs, !is.na(gh_user))
 
+  ## cran always gets installed, even if in "base" library
+  ## TODO add catch that doesn't install CRAN package if version already exists in "base" library
+  ## github will refuse to install if not a newer that what is in "base" library
+  install_try_cran <- purrr::safely(.f = remotes::install_version)
+  install_try_github <- purrr::safely(.f = remotes::install_github)
+
   walk2(.x = cran_pkgs$package, .y = cran_pkgs$version,
-        ~ remotes::install_version(package = .x,
-                                   version = .y,
-                                   upgrade = 'never',
-                                   quiet = FALSE))
+        ~ {
+          message("    **** installing ", .x, " (", .y, ") ****")
+          install_try_cran(package = .x,
+                           version = .y,
+                           upgrade = 'never',
+                           repos = getOption('repos'),
+                           quiet = FALSE)
+        }
+        )
 
-  remotes::install_version('sf', '0.7-3', type = 'source', upgrade = 'never', quiet = TRUE)
-  remotes::install_version('tidycensus', '0.9.2', type = 'source', upgrade = 'never')
+  with(gh_pkgs, paste0(gh_user, '/', package, '@', sha1)) %>%
+    walk(~ {
+            message("    **** installing ", ., " ****")
+            install_try_github(., upgrade = 'never', quiet = FALSE)
+          }
+         )
 
-
-  devtools:::package_find_repo('sf', 'https://cran.rstudio.com') %>%
-    as_tibble() %>%
-    select(path) %>%
-    tail()
-
-
-
-
-  ## all of these takes vector names of packages
-  ## what happens when one of them fails?
-  remotes::install_version(package, version, upgrade = 'never', quiet = FALSE) # for cran
-  remotes::install_github(repo, upgrade = 'never', quiet = FALSE) # username/repo[/subdir][@ref|#pull]
 }
 
 nuke <- function(project_root = getwd()){

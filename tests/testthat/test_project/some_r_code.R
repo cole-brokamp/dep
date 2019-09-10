@@ -2,7 +2,7 @@
 library(sf)
 
 # custom packages from GitHub
-library(CB)
+library(usethis)
 rize::find_docker_cmd()
 
 # a new package to install from CRAN
